@@ -44,40 +44,37 @@ if uploaded_file:
 
             # Parse the generated response
             if isinstance(completion, dict) and 'choices' in completion:
-                generated_code = ""
-                for chunk in completion['choices']:
-                    if 'message' in chunk:
-                        generated_code += chunk['message']['content']
-                
-                # Clean the generated code and display it
-                start_marker = "```python"
-                end_marker = "```"
-                if start_marker in generated_code and end_marker in generated_code:
-                    cleaned_code = generated_code.split(start_marker)[1].split(end_marker)[0].strip()
+                # Extract the content from the API response
+                generated_response = completion['choices'][0]['message']['content']
+
+                # Find Python code inside the response
+                if "```python" in generated_response and "```" in generated_response:
+                    # Extract code between the code block markers
+                    generated_code = generated_response.split("```python")[1].split("```")[0].strip()
+
+                    # Cleaned code display
+                    st.write("#### Cleaned Code for Execution")
+                    st.code(generated_code, language="python")
+
+                    # Step 5: Execute the Generated Code
+                    try:
+                        local_vars = {"data": data}
+                        exec(generated_code, {}, local_vars)
+
+                        # Get the result of the execution
+                        result = local_vars.get("average_age_by_gender")  # Ensure your generated code outputs to 'average_age_by_gender'
+                        if result is not None:
+                            st.write("Execution Output:")
+                            st.write(result)
+                        else:
+                            st.warning("No output generated. Check the logic of the generated code.")
+                    except Exception as e:
+                        st.error(f"Error executing the code: {e}")
                 else:
-                    st.error("No valid Python code found in the generated response.")
-                    st.stop()
-
-                st.write("#### Cleaned Code for Execution")
-                st.code(cleaned_code, language="python")
-
-                # Step 5: Execute the Generated Code
-                try:
-                    local_vars = {"data": data}
-                    exec(cleaned_code, {}, local_vars)
-
-                    # Get the result of the execution
-                    result = local_vars.get("average_age_by_gender")  # Ensure your generated code outputs to 'average_age_by_gender'
-                    if result is not None:
-                        st.write("Execution Output:")
-                        st.write(result)
-                    else:
-                        st.warning("No output generated. Check the logic of the generated code.")
-                except Exception as e:
-                    st.error(f"Error executing the code: {e}")
+                    st.error("No valid Python code found in the response.")
 
             else:
-                st.error(f"Error: API response format unexpected. {completion}")
+                st.error(f"Error: API response format unexpected. Full response: {completion}")
 
     except Exception as e:
         st.error(f"Error reading file: {e}")
