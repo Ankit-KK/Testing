@@ -31,7 +31,7 @@ if uploaded_file:
         generated_code = """
 import pandas as pd
 # Assuming 'data' is the DataFrame
-result = data.groupby('Region')['Sales'].mean()
+result = data.groupby('person_gender')['person_age'].mean()
 result
 """
         st.write("#### Generated Code")
