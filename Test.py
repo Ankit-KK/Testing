@@ -1,9 +1,15 @@
 import streamlit as st
 import pandas as pd
-import io
+from openai import OpenAI  # NVIDIA OpenAI API wrapper
+
+# Initialize LLaMA API
+client = OpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key="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"
+)
 
 # Title of the application
-st.title("Exploragen AI: Interactive Data Analysis")
+st.title("Exploragen AI: LLaMA-Powered Interactive Data Analysis")
 
 # Step 1: File Upload
 st.sidebar.title("Upload Your Dataset")
@@ -26,18 +32,31 @@ if uploaded_file:
     )
 
     if user_query:
-        # Step 3: Generate Code (Mockup)
-        # For now, we'll generate mock code for prototyping
-        generated_code = """
-import pandas as pd
-# Assuming 'data' is the DataFrame
-result = data.groupby('person_gender')['person_age'].mean()
-result
-"""
-        st.write("#### Generated Code")
-        st.code(generated_code, language="python")
+        # Step 3: Generate Code with LLaMA API
+        st.write("#### Generating Python Code...")
+        try:
+            prompt = f"Write Python code to analyze the following dataset based on the question: {user_query}. Assume the data is loaded in a Pandas DataFrame named 'data'."
+            completion = client.chat.completions.create(
+                model="meta/llama-3.1-405b-instruct",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                top_p=0.7,
+                max_tokens=1024,
+                stream=True
+            )
 
-        # Step 4: Execute the Code
+            # Collect the generated code
+            generated_code = ""
+            for chunk in completion:
+                if chunk.choices[0].delta.content is not None:
+                    generated_code += chunk.choices[0].delta.content
+
+            st.code(generated_code, language="python")
+        except Exception as e:
+            st.error(f"Error generating code with LLaMA: {e}")
+            st.stop()
+
+        # Step 4: Execute the Generated Code
         st.write("#### Execution Output")
         try:
             # Define the execution environment (sandboxing can be added later)
