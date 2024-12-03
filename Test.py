@@ -11,7 +11,6 @@ def call_llm_api(prompt):
             temperature=0.2,
             max_tokens=150,
             api_key = "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", 
-            stop=["\n\n"],
         )
         return response
     except Exception as e:
