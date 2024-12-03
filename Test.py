@@ -48,31 +48,27 @@ if uploaded_file:
                 max_tokens=1024
             )
 
-            # Parse the response
-            if "choices" in response:
-                python_code = response['choices'][0]['message']['content'].strip()
+            if "choices" in response and len(response["choices"]) > 0:
+    python_code = response["choices"][0].get("message", {}).get("content", "").strip()
+    if python_code:
+        st.write("#### Generated Python Code")
+        st.code(python_code, language="python")
+        try:
+            # Execute the generated code safely
+            local_namespace = {"data": data}
+            exec(python_code, {}, local_namespace)
 
-                # Display the generated code
-                st.write("#### Generated Python Code")
-                st.code(python_code, language="python")
-
-                # Execute the code
-                try:
-                    # Define a local namespace for code execution
-                    local_namespace = {"data": data}
-                    exec(python_code, {}, local_namespace)
-
-                    # Try to find results in the local namespace
-                    if "result" in local_namespace:
-                        st.write("### Execution Output")
-                        st.write(local_namespace["result"])
-                    else:
-                        st.warning("No 'result' variable found in the generated code output.")
-                except Exception as e:
-                    st.error(f"Error executing the code: {e}")
+            # Check for 'result' variable in execution context
+            if "result" in local_namespace:
+                st.write("### Execution Output")
+                st.write(local_namespace["result"])
             else:
-                st.error(f"Unexpected API response format: {response}")
-    except Exception as e:
-        st.error(f"Error reading file: {e}")
+                st.warning("No 'result' variable found in the generated code.")
+        except Exception as e:
+            st.error(f"Error executing the code: {e}")
+    else:
+        st.error("No code found in the response.")
+else:
+    st.error(f"Unexpected API response format: {response}")
 else:
     st.info("Please upload a CSV file to get started.")
