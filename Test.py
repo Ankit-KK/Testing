@@ -47,10 +47,12 @@ if uploaded_file:
                 # Extract the content from the API response
                 generated_response = completion['choices'][0]['message']['content']
 
-                # Find Python code inside the response
+                # Attempt to extract the Python code from the response
                 if "```python" in generated_response and "```" in generated_response:
                     # Extract code between the code block markers
-                    generated_code = generated_response.split("```python")[1].split("```")[0].strip()
+                    start = generated_response.find("```python") + len("```python")
+                    end = generated_response.find("```", start)
+                    generated_code = generated_response[start:end].strip()
 
                     # Cleaned code display
                     st.write("#### Cleaned Code for Execution")
