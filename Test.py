@@ -5,7 +5,7 @@ from openai import OpenAI
 # Initialize LLaMA API
 client = OpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
-    api_key="your-api-key-here"
+    api_key="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"
 )
 
 # Title of the application
