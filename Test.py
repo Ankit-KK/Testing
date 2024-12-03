@@ -24,7 +24,8 @@ if uploaded_file:
 
         # Step 2: Display available columns
         st.write("### Available Columns in the Dataset")
-        st.write(data.columns.tolist())
+        available_columns = data.columns.tolist()
+        st.write(available_columns)
 
         # Step 3: User Input for Query
         st.write("### Ask a Question About Your Data")
@@ -32,7 +33,7 @@ if uploaded_file:
         
         if user_query:
             # Step 4: Generate Code with LLaMA API
-            prompt = f"Given the dataset with columns {data.columns.tolist()} and the user query: '{user_query}', write Python code to analyze the dataset and answer the query."
+            prompt = f"Given the dataset with columns {available_columns} and the user query: '{user_query}', write Python code to analyze the dataset and answer the query."
             completion = client.chat.completions.create(
                 model="meta/llama-3.1-405b-instruct",
                 messages=[{"role": "user", "content": prompt}],
@@ -40,7 +41,7 @@ if uploaded_file:
                 top_p=0.7,
                 max_tokens=1024
             )
-            
+
             # Parse the generated response
             if isinstance(completion, dict) and 'choices' in completion:
                 generated_code = ""
