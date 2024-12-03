@@ -1,30 +1,36 @@
 import streamlit as st
 import pandas as pd
-import openai
+from openai import OpenAI  # NVIDIA API
 
-# Function to interact with the API
+# Initialize NVIDIA NeMo API client
+client = OpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key="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"
+)
+
+# Function to interact with the NVIDIA NeMo API
 def call_llm_api(prompt):
     try:
-        response = openai.ChatCompletion.create(
+        completion = client.chat.completions.create(
             model="meta/llama-3.1-405b-instruct",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
-            max_tokens=150,
-            api_key = "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", 
+            top_p=0.7,
+            max_tokens=1024,
+            stream=True
         )
-        return response
+
+        response = ""
+        for chunk in completion:
+            if chunk.choices[0].delta.content is not None:
+                response += chunk.choices[0].delta.content
+        return response.strip()
     except Exception as e:
-        st.error(f"Error calling LLM API: {e}")
+        st.error(f"Error calling NVIDIA NeMo API: {e}")
         return None
 
-# Function to extract Python code from the API response
-def extract_code_from_response(response):
-    if response and "choices" in response and len(response["choices"]) > 0:
-        return response["choices"][0].get("message", {}).get("content", "").strip()
-    return None
-
 # App title
-st.title("Exploragen AI: LLaMA-Powered Interactive Data Analysis")
+st.title("Exploragen AI: NeMo-Powered Interactive Data Analysis")
 
 # File upload
 uploaded_file = st.file_uploader("Upload your dataset (CSV)", type=["csv"])
@@ -51,10 +57,9 @@ if uploaded_file is not None:
 
         # Call the API
         with st.spinner("Generating code..."):
-            response = call_llm_api(prompt)
+            python_code = call_llm_api(prompt)
         
-        # Extract and display the code
-        python_code = extract_code_from_response(response)
+        # Display the code
         if python_code:
             st.write("#### Generated Python Code")
             st.code(python_code, language="python")
@@ -73,4 +78,4 @@ if uploaded_file is not None:
             except Exception as e:
                 st.error(f"Error executing the code: {e}")
         else:
-            st.error(f"Unexpected API response format: {response}")
+            st.error("Failed to generate Python code from the API response.")
