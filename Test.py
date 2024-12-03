@@ -57,19 +57,36 @@ if uploaded_file:
             st.stop()
 
         # Step 4: Execute the Generated Code
-        st.write("#### Execution Output")
-        try:
-            # Define the execution environment (sandboxing can be added later)
-            local_vars = {"data": data}
-            exec(generated_code, {}, local_vars)
-            result = local_vars.get("result")
+st.write("#### Execution Output")
+try:
+    # Define the execution environment
+    local_vars = {"data": data}
 
-            if isinstance(result, pd.Series) or isinstance(result, pd.DataFrame):
-                st.write(result)
-            else:
-                st.write("Output:", result)
-        except Exception as e:
-            st.error(f"Error executing the code: {e}")
+    # Strip unnecessary text from generated code (basic filtering)
+    generated_code_lines = generated_code.split("\n")
+    filtered_code = "\n".join(
+        line for line in generated_code_lines if not line.startswith("#") and "Example Output" not in line
+    )
+
+    st.write("Filtered Code for Execution:")
+    st.code(filtered_code, language="python")
+
+    # Execute the filtered code
+    exec(filtered_code, {}, local_vars)
+
+    # Extract the result if available
+    result = local_vars.get("average_age_by_gender")
+
+    if result is not None:
+        if isinstance(result, pd.Series) or isinstance(result, pd.DataFrame):
+            st.write(result)
+        else:
+            st.write("Output:", result)
+    else:
+        st.warning("No output variable found. Please review the generated code.")
+except Exception as e:
+    st.error(f"Error executing the code: {e}")
+
 
 else:
     st.info("Please upload a CSV file to get started.")
