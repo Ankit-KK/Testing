@@ -51,42 +51,38 @@ if uploaded_file:
                 if chunk.choices[0].delta.content is not None:
                     generated_code += chunk.choices[0].delta.content
 
-            st.code(generated_code, language="python")
+            # Clean the generated code to isolate the Python snippet
+            start_marker = "```python"
+            end_marker = "```"
+            if start_marker in generated_code and end_marker in generated_code:
+                cleaned_code = generated_code.split(start_marker)[1].split(end_marker)[0].strip()
+            else:
+                st.error("No valid Python code found in the generated response.")
+                st.stop()
+
+            # Display the cleaned code
+            st.write("#### Cleaned Code for Execution")
+            st.code(cleaned_code, language="python")
+
         except Exception as e:
             st.error(f"Error generating code with LLaMA: {e}")
             st.stop()
 
-        # Step 4: Execute the Generated Code
-st.write("#### Execution Output")
-try:
-    # Define the execution environment
-    local_vars = {"data": data}
+        # Step 4: Validate Dataset Columns and Execute Code
+        try:
+            # Dynamically execute the cleaned Python code
+            local_vars = {"data": data}
+            exec(cleaned_code, {}, local_vars)
 
-    # Strip unnecessary text from generated code (basic filtering)
-    generated_code_lines = generated_code.split("\n")
-    filtered_code = "\n".join(
-        line for line in generated_code_lines if not line.startswith("#") and "Example Output" not in line
-    )
-
-    st.write("Filtered Code for Execution:")
-    st.code(filtered_code, language="python")
-
-    # Execute the filtered code
-    exec(filtered_code, {}, local_vars)
-
-    # Extract the result if available
-    result = local_vars.get("average_age_by_gender")
-
-    if result is not None:
-        if isinstance(result, pd.Series) or isinstance(result, pd.DataFrame):
-            st.write(result)
-        else:
-            st.write("Output:", result)
-    else:
-        st.warning("No output variable found. Please review the generated code.")
-except Exception as e:
-    st.error(f"Error executing the code: {e}")
-
+            # Retrieve a known variable (modify as per code logic)
+            result = local_vars.get("average_age")  # Adjust based on variable in code
+            if result is not None:
+                st.write("Execution Output:")
+                st.write(result)
+            else:
+                st.warning("No output generated. Check the logic of the generated code.")
+        except Exception as e:
+            st.error(f"Error executing the code: {e}")
 
 else:
     st.info("Please upload a CSV file to get started.")
