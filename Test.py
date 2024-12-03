@@ -48,14 +48,15 @@ if uploaded_file:
                 generated_response = completion['choices'][0]['message']['content']
 
                 # Attempt to extract the Python code from the response
-                if "```python" in generated_response and "```" in generated_response:
-                    # Extract code between the code block markers
-                    start = generated_response.find("```python") + len("```python")
-                    end = generated_response.find("```", start)
-                    generated_code = generated_response[start:end].strip()
+                start = generated_response.find("```python")
+                end = generated_response.find("```", start + len("```python"))
 
-                    # Cleaned code display
-                    st.write("#### Cleaned Code for Execution")
+                if start != -1 and end != -1:
+                    # Extract code block
+                    generated_code = generated_response[start + len("```python"):end].strip()
+
+                    # Display the cleaned code
+                    st.write("#### Generated Python Code")
                     st.code(generated_code, language="python")
 
                     # Step 5: Execute the Generated Code
@@ -63,21 +64,19 @@ if uploaded_file:
                         local_vars = {"data": data}
                         exec(generated_code, {}, local_vars)
 
-                        # Get the result of the execution
-                        result = local_vars.get("average_age_by_gender")  # Ensure your generated code outputs to 'average_age_by_gender'
+                        # Assuming the code outputs a variable named 'result'
+                        result = local_vars.get("avg_age_by_gender")
                         if result is not None:
-                            st.write("Execution Output:")
+                            st.write("### Execution Output")
                             st.write(result)
                         else:
                             st.warning("No output generated. Check the logic of the generated code.")
                     except Exception as e:
                         st.error(f"Error executing the code: {e}")
                 else:
-                    st.error("No valid Python code found in the response.")
-
+                    st.error("No valid Python code block found in the response.")
             else:
-                st.error(f"Error: API response format unexpected. Full response: {completion}")
-
+                st.error(f"Unexpected API response format: {completion}")
     except Exception as e:
         st.error(f"Error reading file: {e}")
 else:
