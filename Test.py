@@ -32,8 +32,14 @@ if uploaded_file:
         user_query = st.text_input("Describe your analysis request (e.g., 'What is the average sales by region?'):")
 
         if user_query:
+            # Refined prompt to ask LLM to extract only code
+            prompt = (
+                f"Given the dataset with columns {available_columns} and the user query: '{user_query}', "
+                f"write Python code that directly analyzes the dataset to answer the query. "
+                f"Do not include explanations, comments, or extra text—return only the Python code."
+            )
+
             # Generate code using LLaMA API
-            prompt = f"Given the dataset with columns {available_columns} and the user query: '{user_query}', write Python code to analyze the dataset and answer the query."
             response = client.chat.completions.create(
                 model="meta/llama-3.1-405b-instruct",
                 messages=[{"role": "user", "content": prompt}],
@@ -42,38 +48,28 @@ if uploaded_file:
                 max_tokens=1024
             )
 
-            # Extract the Python code from the API response
+            # Parse the response
             if "choices" in response:
-                response_content = response['choices'][0]['message']['content']
+                python_code = response['choices'][0]['message']['content'].strip()
 
-                # Attempt to find the Python code block
-                start = response_content.find("```python")
-                end = response_content.find("```", start + len("```python"))
+                # Display the generated code
+                st.write("#### Generated Python Code")
+                st.code(python_code, language="python")
 
-                if start != -1 and end != -1:
-                    # Extract the code
-                    python_code = response_content[start + len("```python"):end].strip()
+                # Execute the code
+                try:
+                    # Define a local namespace for code execution
+                    local_namespace = {"data": data}
+                    exec(python_code, {}, local_namespace)
 
-                    # Display the generated code
-                    st.write("#### Generated Python Code")
-                    st.code(python_code, language="python")
-
-                    # Execute the code
-                    try:
-                        # Define a local namespace for code execution
-                        local_namespace = {"data": data}
-                        exec(python_code, {}, local_namespace)
-
-                        # Try to find results in the local namespace
-                        if "result" in local_namespace:
-                            st.write("### Execution Output")
-                            st.write(local_namespace["result"])
-                        else:
-                            st.warning("No 'result' variable found in the generated code output.")
-                    except Exception as e:
-                        st.error(f"Error executing the code: {e}")
-                else:
-                    st.error("No valid Python code block found in the response.")
+                    # Try to find results in the local namespace
+                    if "result" in local_namespace:
+                        st.write("### Execution Output")
+                        st.write(local_namespace["result"])
+                    else:
+                        st.warning("No 'result' variable found in the generated code output.")
+                except Exception as e:
+                    st.error(f"Error executing the code: {e}")
             else:
                 st.error(f"Unexpected API response format: {response}")
     except Exception as e:
